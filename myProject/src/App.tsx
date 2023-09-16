@@ -4,18 +4,28 @@ import viteLogo from "/vite.svg";
 import "./App.css";
 import axios from "axios";
 import moment from "moment";
+import $api from "./axiosConfig";
 function App() {
   const [count, setCount] = useState([]);
   const [updata, setUpdata] = useState<number | null>();
   const [name, setName] = useState<string>("")
   const [address, setAddress] = useState<string>("")
+
   useEffect(() => {
-    axios.get("http://localhost:4000/api").then((res) => {
+    $api.get("/api").then((res) => {
       console.log(res);
       setCount(res.data.item1);
     });
   }, []);
 
+  const refreshToken = () =>{
+    $api.post("/api/auth/refreshToken",{
+      refreshToken:JSON.parse(localStorage.getItem("refreshtoken")??"")
+    }).then((res) =>{
+      console.log(res.data)
+      localStorage.setItem("token",JSON.stringify(res.data.data))
+    })
+  }
   const submitHandler = (event: any) => {
     event.preventDefault();
     console.log(event);
@@ -23,36 +33,37 @@ function App() {
       name: event.target[0].value,
       address: event.target[1].value,
     };
-    axios
-      .post("http://localhost:4000/api/add", body)
+   $api
+      .post("/api/add", body)
       .then((res) => console.log(res))
       .catch((err) => console.log(err));
     console.log(body);
   };
 
   const deleteHandler = (id: number) => {
-    axios
-      .delete("http://localhost:4000/api/delete", { params: { id } })
+    $api
+      .delete("/api/delete", { params: { id } })
       .then((res) => console.log(res))
       .catch((err) => console.log(err));
   };
 
 
-  const updataHendler = (item:any) =>{
+  const updataHendler = (item: any) => {
     const body = {
-      id:item,
-       name:name,
-       address:"tbilisi" + name
+      id: item,
+      name: name,
+      address: "tbilisi" + name
     }
-    
-    axios.put("http://localhost:4000/api/put",body).then((res) =>{
-setUpdata(null)
-console.log(res)
+
+    $api.put("/api/updata", body).then((res) => {
+      setUpdata(null)
+      console.log(res)
     }).catch((err) => console.log(err))
   }
 
   return (
     <>
+    <button onClick={refreshToken}>refreshTken</button>
       <form onSubmit={submitHandler}>
         <input type="text" name="fullName" />
         <input type="text" name="address" />
@@ -71,10 +82,11 @@ console.log(res)
               key={item.id}
               style={{ display: "flex", gap: "10px", marginBottom: "20px" }}
             >
-              {updata === item.id ? <input onChange={(e) =>{
-                setName(e.target.value)}
-              } defaultValue={item.fullName}/> : <p>სახელი:{item.fullName}</p>}
-              
+              {updata === item.id ? <input onChange={(e) => {
+                setName(e.target.value)
+              }
+              } defaultValue={item.fullName} /> : <p>სახელი:{item.fullName}</p>}
+
               <p>მისამართი:{item.address}</p>
               <p>დაბადების თარიღი:{moment(item.date).format("DD:MM:YY")}</p>
               <button
@@ -84,12 +96,12 @@ console.log(res)
               >
                 წაშლა
               </button>
-              {updata !== item.id ? <button   onClick={() => {
+              {updata !== item.id ? <button onClick={() => {
                 console.log(item.id)
                 setUpdata(item.id)
-                }}>განახლება</button> :<button   onClick={() => {
+              }}>განახლება</button> : <button onClick={() => {
                 updataHendler(item.id)
-                  }}>დამახსოვრება</button>}
+              }}>დამახსოვრება</button>}
             </div>
           );
         }
